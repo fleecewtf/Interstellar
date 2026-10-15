@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <GameAssemblyPath Condition="'$(GameAssemblyPath)' == '' and '$(GamePath)' != ''">$(GamePath)\Gorilla Tag_Data\Managed</GameAssemblyPath>
+    <BepInExAssemblyPath Condition="'$(BepInExAssemblyPath)' == '' and '$(GamePath)' != ''">$(GamePath)\BepInEx\core</BepInExAssemblyPath>
+  </PropertyGroup>
+</Project>

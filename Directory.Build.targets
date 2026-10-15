@@ -1,0 +1,6 @@
+<Project>
+  <Target Name="ValidateGameReferences" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(ManagedGameRefs)\Assembly-CSharp.dll')" Text="Set GamePath to your Gorilla Tag installation, or set GameAssemblyPath to its managed assemblies directory." />
+    <Error Condition="!Exists('$(CoreGameRefs)\BepInEx.dll') or !Exists('$(CoreGameRefs)\0Harmony.dll')" Text="Install BepInEx 5 in the selected game directory, or set BepInExAssemblyPath to its core assemblies directory." />
+  </Target>
+</Project>

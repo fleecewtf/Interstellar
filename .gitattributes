@@ -1,0 +1,17 @@
+* text=auto eol=lf
+*.cs text
+*.csproj text
+*.props text
+*.targets text
+*.shader text
+*.svg text
+*.md text
+*.txt text
+LICENSE text
+*.png binary
+*.ogg binary
+*.ttf binary
+*.glb binary
+Resources/Client/interstellarmenu binary
+Resources/Client/menu_typography binary
+Resources/Client/menu_visuals binary

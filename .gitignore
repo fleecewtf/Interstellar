@@ -1,0 +1,17 @@
+bin/
+obj/
+References/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.pdb
+*.dll
+*.exe
+*.log
+*.tmp
+*.dmp
+*.zip
+.env
+.env.*
