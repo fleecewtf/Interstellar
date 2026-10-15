@@ -731,10 +731,12 @@ namespace Interstellar.Menu
 
                         Destroy(ghostRigHolder);
 
-                        GhostRig.transform.Find("VR Constraints/LeftArm/Left Arm IK/SlideAudio").gameObject.SetActive(false);
-                        GhostRig.transform.Find("VR Constraints/RightArm/Right Arm IK/SlideAudio").gameObject.SetActive(false);
-                        GhostRig.transform.Find("rig/body_pivot/SlideAudio").gameObject.SetActive(false);
-                        GhostRig.GetComponent<OwnershipGaurd>().enabled = false;
+                        GhostRig.transform.Find("VR Constraints/LeftArm/Left Arm IK/SlideAudio")?.gameObject.SetActive(false);
+                        GhostRig.transform.Find("VR Constraints/RightArm/Right Arm IK/SlideAudio")?.gameObject.SetActive(false);
+                        Transform bodySlideAudio = GhostRig.transform.Find("bodySlideAudio") ?? GhostRig.transform.Find("rig/body_pivot/SlideAudio");
+                        if (bodySlideAudio != null) bodySlideAudio.gameObject.SetActive(false);
+                        OwnershipGaurd ownershipGuard = GhostRig.GetComponent<OwnershipGaurd>();
+                        if (ownershipGuard != null) ownershipGuard.enabled = false;
 
                         Visuals.FixRigMaterialESPColors(GhostRig);
 
@@ -3479,8 +3481,12 @@ namespace Interstellar.Menu
 
         public static GameObject GetObject(string find)
         {
+            if (string.IsNullOrEmpty(find)) return null;
             if (objectPool.TryGetValue(find, out GameObject go))
-                return go;
+            {
+                if (go != null) return go;
+                objectPool.Remove(find);
+            }
 
             GameObject tgo = GameObject.Find(find);
             if (!tgo && find.Contains("/"))

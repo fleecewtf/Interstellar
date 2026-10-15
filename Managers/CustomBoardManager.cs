@@ -43,11 +43,6 @@ namespace Interstellar.Managers
                 if (value)
                 {
                     instance.ReloadBoards();
-                    if (instance.motdTitle != null) instance.motdTitle.SetActive(true);
-                    if (instance.motdText != null) instance.motdText.SetActive(true);
-
-                    GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdBodyText").SetActive(false);
-                    GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdHeadingText").SetActive(false);
                 }
                 else
                 {
@@ -58,11 +53,7 @@ namespace Interstellar.Managers
 
                     instance.objectBoards.Clear();
 
-                    if (instance.motdTitle != null) instance.motdTitle.SetActive(false);
-                    if (instance.motdText != null) instance.motdText.SetActive(false);
-
-                    GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdHeadingText").SetActive(true);
-                    GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdBodyText").SetActive(true);
+                    instance.RestoreMotd();
                 }
             }
         }
@@ -75,11 +66,11 @@ namespace Interstellar.Managers
             get => _customBoardFonts;
             set
             {
-                if (!value && _customBoardFonts)
+                if (!value && _customBoardFonts && instance != null)
                 {
                     foreach (TextMeshPro txt in instance.textMeshPro)
                     {
-                        if (!txt.isActiveAndEnabled) continue;
+                        if (txt == null || !txt.isActiveAndEnabled) continue;
 
                         txt.SafeSetFont(instance.archiveGorillaTagFont);
                         txt.SafeSetFontStyle(FontStyles.Normal);
@@ -156,12 +147,57 @@ namespace Interstellar.Managers
 
         private void RestoreMotd()
         {
+            if (motdText != null && (motdTitle == null || !motdText.transform.IsChildOf(motdTitle.transform)))
+                Destroy(motdText);
             if (motdTitle != null) Destroy(motdTitle);
-            if (motdText != null) Destroy(motdText);
-            GameObject heading = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdHeadingText");
-            GameObject body = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdBodyText");
-            if (heading != null) heading.SetActive(true);
-            if (body != null) body.SetActive(true);
+            motdTitle = null;
+            motdText = null;
+            if (originalMotdBody != null) originalMotdBody.SetActive(originalMotdBodyActive);
+            if (originalMotdHeading != null) originalMotdHeading.SetActive(originalMotdHeadingActive);
+            originalMotdHeading = null;
+            originalMotdBody = null;
+            motdActivationFrame = -1;
+        }
+
+        private bool EnsureMotd()
+        {
+            if (motdTitle != null && motdText != null)
+            {
+                if (Time.frameCount <= motdActivationFrame) return false;
+                if (!motdText.activeSelf) motdText.SetActive(true);
+                if (!motdTitle.activeSelf) motdTitle.SetActive(true);
+                return true;
+            }
+
+            RestoreMotd();
+            GameObject heading = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/motdHeadingText");
+            if (heading == null || heading.GetComponent<TextMeshPro>() == null) return false;
+            Transform bodyTransform = heading.transform.Find("motdBodyText");
+            if (bodyTransform == null || bodyTransform.GetComponent<TextMeshPro>() == null) return false;
+
+            originalMotdHeading = heading;
+            originalMotdBody = bodyTransform.gameObject;
+            originalMotdHeadingActive = heading.activeSelf;
+            originalMotdBodyActive = originalMotdBody.activeSelf;
+            heading.SetActive(false);
+            try
+            {
+                motdTitle = Instantiate(heading, heading.transform.parent);
+                motdTitle.name = "Interstellar_MotdHeading";
+                motdText = motdTitle.transform.Find("motdBodyText").gameObject;
+                foreach (PlayFabTitleDataTextDisplay display in motdTitle.GetComponentsInChildren<PlayFabTitleDataTextDisplay>(true))
+                {
+                    display.enabled = false;
+                    Destroy(display);
+                }
+                motdActivationFrame = Time.frameCount;
+            }
+            catch
+            {
+                RestoreMotd();
+                throw;
+            }
+            return false;
         }
 
         public static bool motdTextDirty = true;
@@ -171,6 +207,11 @@ namespace Interstellar.Managers
 
         public GameObject motdTitle;
         public GameObject motdText;
+        private GameObject originalMotdHeading;
+        private GameObject originalMotdBody;
+        private bool originalMotdHeadingActive;
+        private bool originalMotdBodyActive;
+        private int motdActivationFrame = -1;
 
         private TMP_FontAsset archiveGorillaTagFont;
 
@@ -199,43 +240,51 @@ namespace Interstellar.Managers
 
                     objectBoards.Clear();
 
-                    foreach (GorillaNetworkJoinTrigger joinTrigger in PhotonNetworkController.Instance.allJoinTriggers)
+                    bool joinTriggersReady = PhotonNetworkController.Instance != null && PhotonNetworkController.Instance.allJoinTriggers != null;
+                    if (joinTriggersReady)
                     {
-                        try
+                        foreach (GorillaNetworkJoinTrigger joinTrigger in PhotonNetworkController.Instance.allJoinTriggers)
                         {
-                            JoinTriggerUI ui = joinTrigger.ui;
-                            JoinTriggerUITemplate temp = ui.template;
+                            try
+                            {
+                                if (joinTrigger == null || joinTrigger.ui == null || joinTrigger.ui.template == null) continue;
+                                JoinTriggerUI ui = joinTrigger.ui;
+                                JoinTriggerUITemplate temp = ui.template;
 
-                            if (!triggerMaterials.ContainsKey(temp))
-                                triggerMaterials[temp] = new[] {
-                                    temp.ScreenBG_AbandonPartyAndSoloJoin, temp.ScreenBG_AlreadyInRoom,
-                                    temp.ScreenBG_ChangingGameModeSoloJoin, temp.ScreenBG_Error,
-                                    temp.ScreenBG_InPrivateRoom, temp.ScreenBG_LeaveRoomAndGroupJoin,
-                                    temp.ScreenBG_LeaveRoomAndSoloJoin, temp.ScreenBG_NotConnectedSoloJoin
-                                };
+                                if (!triggerMaterials.ContainsKey(temp))
+                                    triggerMaterials[temp] = new[] {
+                                        temp.ScreenBG_AbandonPartyAndSoloJoin, temp.ScreenBG_AlreadyInRoom,
+                                        temp.ScreenBG_ChangingGameModeSoloJoin, temp.ScreenBG_Error,
+                                        temp.ScreenBG_InPrivateRoom, temp.ScreenBG_LeaveRoomAndGroupJoin,
+                                        temp.ScreenBG_LeaveRoomAndSoloJoin, temp.ScreenBG_NotConnectedSoloJoin
+                                    };
 
-                            temp.ScreenBG_AbandonPartyAndSoloJoin = BoardMaterial;
-                            temp.ScreenBG_AlreadyInRoom = BoardMaterial;
-                            temp.ScreenBG_ChangingGameModeSoloJoin = BoardMaterial;
-                            temp.ScreenBG_Error = BoardMaterial;
-                            temp.ScreenBG_InPrivateRoom = BoardMaterial;
-                            temp.ScreenBG_LeaveRoomAndGroupJoin = BoardMaterial;
-                            temp.ScreenBG_LeaveRoomAndSoloJoin = BoardMaterial;
-                            temp.ScreenBG_NotConnectedSoloJoin = BoardMaterial;
+                                temp.ScreenBG_AbandonPartyAndSoloJoin = BoardMaterial;
+                                temp.ScreenBG_AlreadyInRoom = BoardMaterial;
+                                temp.ScreenBG_ChangingGameModeSoloJoin = BoardMaterial;
+                                temp.ScreenBG_Error = BoardMaterial;
+                                temp.ScreenBG_InPrivateRoom = BoardMaterial;
+                                temp.ScreenBG_LeaveRoomAndGroupJoin = BoardMaterial;
+                                temp.ScreenBG_LeaveRoomAndSoloJoin = BoardMaterial;
+                                temp.ScreenBG_NotConnectedSoloJoin = BoardMaterial;
 
-                            TextMeshPro text = ui.screenText;
-                            if (!textMeshPro.Contains(text))
-                                textMeshPro.Add(text);
+                                TextMeshPro text = ui.screenText;
+                                if (text != null && !textMeshPro.Contains(text))
+                                    textMeshPro.Add(text);
+                            }
+                            catch { }
                         }
-                        catch { }
                     }
-                    PhotonNetworkController.Instance.UpdateTriggerScreens();
+                    if (PhotonNetworkController.Instance != null)
+                        PhotonNetworkController.Instance.UpdateTriggerScreens();
 
                     string[] objectsWithTMPro = {
-                            "Environment Objects/LocalObjects_Prefab/TreeRoom/CodeOfConductHeadingText",
-                            "Environment Objects/LocalObjects_Prefab/TreeRoom/COCBodyText_TitleData",
-                            "Environment Objects/LocalObjects_Prefab/TreeRoom/Data",
-                            "Environment Objects/LocalObjects_Prefab/TreeRoom/FunctionSelect"
+                            "Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/CodeOfConduct_Group/CodeOfConductHeadingText",
+                            "Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/CodeOfConduct_Group/CodeOfConductHeadingText/COCBodyText_TitleData",
+                            "Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/-- PhysicalComputer UI --/monitor/Data",
+                            "Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/UI/-- PhysicalComputer UI --/monitor/FunctionSelect",
+                            "Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/GorillaComputerObject/ComputerUI/monitor/monitorScreen/Data",
+                            "Environment Objects/LocalObjects_Prefab/TreeRoom/TreeRoomInteractables/GorillaComputerObject/ComputerUI/monitor/monitorScreen/FunctionSelect"
                         };
                     foreach (string objectName in objectsWithTMPro)
                     {
@@ -243,25 +292,26 @@ namespace Interstellar.Managers
                         if (obj != null)
                         {
                             TextMeshPro text = obj.GetComponent<TextMeshPro>();
-                            if (!textMeshPro.Contains(text))
+                            if (text != null && !textMeshPro.Contains(text))
                                 textMeshPro.Add(text);
                         }
                         else
                             LogManager.Log("Could not find " + objectName);
                     }
 
-                    Transform forestTransform = GetObject("Environment Objects/LocalObjects_Prefab/Forest/ForestScoreboardAnchor/GorillaScoreBoard").transform;
-                    for (int i = 0; i < forestTransform.transform.childCount; i++)
+                    GameObject forestBoard = GetObject("Environment Objects/LocalObjects_Prefab/Forest/ForestScoreboardAnchor/GorillaScoreBoard");
+                    Transform forestTransform = forestBoard != null ? forestBoard.transform : null;
+                    for (int i = 0; forestTransform != null && i < forestTransform.childCount; i++)
                     {
                         GameObject v = forestTransform.GetChild(i).gameObject;
                         if ((!v.name.Contains("Board Text") && !v.name.Contains("Scoreboard_OfflineText")) ||
                             !v.activeSelf) continue;
                         TextMeshPro text = v.GetComponent<TextMeshPro>();
-                        if (!textMeshPro.Contains(text))
+                        if (text != null && !textMeshPro.Contains(text))
                             textMeshPro.Add(text);
                     }
 
-                    hasFoundAllBoards = true;
+                    hasFoundAllBoards = joinTriggersReady;
                 }
                 catch (Exception exc)
                 {
@@ -276,53 +326,7 @@ namespace Interstellar.Managers
                 boardColor.a = 1f;
                 BoardMaterial.color = boardColor;
 
-                if (motdTitle == null)
-                {
-                    GameObject motdObject = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdHeadingText");
-                    motdTitle = Instantiate(motdObject, motdObject.transform.parent);
-                    motdObject.SetActive(false);
-                }
-
-                TextMeshPro motdHeadingText = motdTitle.GetComponent<TextMeshPro>();
-                if (!textMeshPro.Contains(motdHeadingText))
-                    textMeshPro.Add(motdHeadingText);
-
-                if (motdTextDirty) RebuildMotdText();
-
-                motdHeadingText.richText = true;
-                motdHeadingText.SafeSetFontSize(100);
-                motdHeadingText.SafeSetText(cachedMotdHeading);
-                motdHeadingText.SafeSetFontStyle(activeFontStyle);
-                motdHeadingText.SafeSetFont(activeFont);
-                FollowMenuSettings(motdHeadingText, -4f);
-
-                motdHeadingText.SafeSetText(FollowMenuSettings(motdHeadingText.text));
-
-                motdHeadingText.color = textColors[0].GetCurrentColor();
-                motdHeadingText.overflowMode = TextOverflowModes.Overflow;
-
-                if (motdText == null)
-                {
-                    GameObject motdObject = GetObject("Environment Objects/LocalObjects_Prefab/TreeRoom/motdBodyText");
-                    motdText = Instantiate(motdObject, motdObject.transform.parent);
-                    motdObject.SetActive(false);
-
-                    motdText.GetComponent<PlayFabTitleDataTextDisplay>().enabled = false;
-                }
-
-                TextMeshPro motdBodyText = motdText.GetComponent<TextMeshPro>();
-                if (!textMeshPro.Contains(motdBodyText))
-                    textMeshPro.Add(motdBodyText);
-
-                motdBodyText.richText = true;
-                motdBodyText.SafeSetFontSize(100);
-                motdBodyText.color = textColors[0].GetCurrentColor();
-                motdBodyText.SafeSetFontStyle(activeFontStyle);
-                motdBodyText.SafeSetFont(activeFont);
-                FollowMenuSettings(motdBodyText, -4f);
-
-                if (motdTextDirty) RebuildMotdText();
-                motdBodyText.SafeSetText(cachedMotdBody);
+                UpdateMotd();
             }
             catch { }
 
@@ -335,7 +339,7 @@ namespace Interstellar.Managers
 
                 foreach (TextMeshPro txt in textMeshPro)
                 {
-                    if (!txt.isActiveAndEnabled) continue;
+                    if (txt == null || !txt.isActiveAndEnabled) continue;
 
                     txt.color = targetColor;
 
@@ -352,6 +356,42 @@ namespace Interstellar.Managers
                 }
             }
             catch { }
+        }
+
+        private void UpdateMotd()
+        {
+            if (!EnsureMotd()) return;
+            TextMeshPro motdHeadingText = motdTitle.GetComponent<TextMeshPro>();
+            if (!textMeshPro.Contains(motdHeadingText))
+                textMeshPro.Add(motdHeadingText);
+
+            if (motdTextDirty || cachedMotdHeading == null || cachedMotdBody == null) RebuildMotdText();
+
+            motdHeadingText.richText = true;
+            motdHeadingText.SafeSetFontSize(100);
+            motdHeadingText.SafeSetText(cachedMotdHeading);
+            motdHeadingText.SafeSetFontStyle(activeFontStyle);
+            motdHeadingText.SafeSetFont(activeFont);
+            FollowMenuSettings(motdHeadingText, -4f);
+
+            motdHeadingText.SafeSetText(FollowMenuSettings(motdHeadingText.text));
+
+            motdHeadingText.color = textColors[0].GetCurrentColor();
+            motdHeadingText.overflowMode = TextOverflowModes.Overflow;
+
+            TextMeshPro motdBodyText = motdText.GetComponent<TextMeshPro>();
+            if (!textMeshPro.Contains(motdBodyText))
+                textMeshPro.Add(motdBodyText);
+
+            motdBodyText.richText = true;
+            motdBodyText.SafeSetFontSize(100);
+            motdBodyText.color = textColors[0].GetCurrentColor();
+            motdBodyText.SafeSetFontStyle(activeFontStyle);
+            motdBodyText.SafeSetFont(activeFont);
+            FollowMenuSettings(motdBodyText, -4f);
+
+            if (motdTextDirty) RebuildMotdText();
+            motdBodyText.SafeSetText(cachedMotdBody);
         }
 
 
@@ -371,6 +411,8 @@ namespace Interstellar.Managers
         {
             try
             {
+                GameObject parent = GetObject(gameObject);
+                if (parent == null) return;
                 if (objectBoards.TryGetValue(scene, out GameObject existingBoard))
                 {
                     if (existingBoard != null)
@@ -380,7 +422,7 @@ namespace Interstellar.Managers
                 }
 
                 GameObject board = Interstellar.Patches.Menu.ShaderFix.CreatePrimitive(PrimitiveType.Plane);
-                board.transform.parent = GetObject(gameObject).transform;
+                board.transform.parent = parent.transform;
                 board.transform.localPosition = position ?? new Vector3(-22.1964f, -34.9f, 0.57f);
                 board.transform.localRotation = Quaternion.Euler(rotation ?? new Vector3(270f, 0f, 0f));
                 board.transform.localScale = scale ?? new Vector3(21.6f, 2.4f, 22f);
@@ -451,7 +493,7 @@ namespace Interstellar.Managers
                 new Vector3(21.2f, 2f, 21.6f)
             ),
             ["Cave"] = new BoardInformation(
-                "Cave_Main_Prefab/CrystalCaveScoreboardAnchor/GorillaScoreBoard",
+                "Cave_Main_Prefab/NewCave/CrystalCaveScoreboardAnchor/GorillaScoreBoard",
                 new Vector3(-22.1964f, -33.7126f, 0.1f),
                 new Vector3(270.056f, 0f, 0f),
                 new Vector3(21.2f, 2f, 21.6f)

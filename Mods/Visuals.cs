@@ -14,22 +14,30 @@ namespace Interstellar.Mods
     {
         public static void InstantiateWatch()
         {
-            GameObject mainwatch = VRRig.LocalRig.transform.Find("rig/hand.L/huntcomputer (1)").gameObject;
-            GameObject watch = Object.Instantiate(mainwatch,
-                rightHand ? VRRig.LocalRig.transform.Find("rig/hand.R").transform
-                          : VRRig.LocalRig.transform.Find("rig/hand.L").transform, false);
+            VRRig rig = VRRig.LocalRig;
+            if (rig == null || rig.huntComputer == null) return;
+            Transform hand = rig.transform.Find(rightHand ? "rig/hand.R" : "rig/hand.L");
+            if (hand == null) return;
 
-            Object.DestroyImmediate(watch.GetComponent<GorillaHuntComputer>());
+            GameObject watch = Object.Instantiate(rig.huntComputer, hand, false);
+            GorillaHuntComputer computer = watch.GetComponent<GorillaHuntComputer>();
+            Transform screen = watch.transform.Find("HuntWatch_Screen_DefaultAnchor/HuntWatch_ScreenLocal")
+                ?? watch.transform.Find("HuntWatch_ScreenLocal");
+            if (computer == null || computer.text == null || computer.leftHand == null || screen == null)
+            {
+                Object.Destroy(watch);
+                return;
+            }
 
-            Transform anchor = watch.transform.Find("HuntWatch_ScreenLocal/Canvas/Anchor");
-            anchor.Find("Hat").gameObject.SetActive(false);
-            anchor.Find("Face").gameObject.SetActive(false);
-            anchor.Find("Badge").gameObject.SetActive(false);
-            anchor.Find("Material").gameObject.SetActive(false);
-            anchor.Find("Right Hand").gameObject.SetActive(false);
-            anchor.Find("Left Hand").gameObject.SetActive(false);
+            GameObject textObject = computer.text.gameObject;
+            Image indicatorImage = computer.leftHand;
+            foreach (Image image in new[] { computer.hat, computer.face, computer.badge,
+                computer.material, computer.rightHand, computer.leftHand })
+                if (image != null) image.gameObject.SetActive(false);
 
-            GameObject shell = watch.transform.Find("HuntWatch_ScreenLocal").gameObject;
+            Object.DestroyImmediate(computer);
+
+            GameObject shell = screen.gameObject;
 
             if (rightHand)
             {
@@ -38,7 +46,6 @@ namespace Interstellar.Mods
                 shell.transform.localPosition += new Vector3(0.025f, 0f, -0.035f);
             }
 
-            GameObject textObject = anchor.Find("Text").gameObject;
             Object.DestroyImmediate(textObject.GetComponent<Text>());
 
             TextMeshProUGUI tmp = textObject.AddComponent<TextMeshProUGUI>();
@@ -51,7 +58,7 @@ namespace Interstellar.Mods
             {
                 text = tmp,
                 shell = shell,
-                indicator = anchor.Find("Left Hand").gameObject.GetComponent<Image>()
+                indicator = indicatorImage
             });
         }
 
