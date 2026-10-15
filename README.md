@@ -11,11 +11,13 @@
 <p align="center">
   <a href="https://github.com/fleecewtf/Interstellar/releases/latest"><strong>Download DLL</strong></a>
   &nbsp;&nbsp;
+  <a href="https://interstellar.rip/download"><strong>Download Loader</strong></a>
+  &nbsp;&nbsp;
   <a href="https://github.com/fleecewtf/Interstellar/releases">Releases</a>
   &nbsp;&nbsp;
   <a href="https://interstellar.rip">Website</a>
   &nbsp;&nbsp;
-  <a href="https://github.com/fleecewtf/Interstellar/issues">Report a bug</a>
+  <a href="https://discord.gg/fZJQ5PaBm6">Discord</a>
 </p>
 
 ---
@@ -24,6 +26,10 @@
 <summary><strong>How do I install the menu?</strong></summary>
 
 Interstellar runs on the Windows version of Gorilla Tag with **BepInEx 5** installed.
+
+You can use the [Interstellar Loader](https://interstellar.rip/download) to install or repair the menu without moving DLLs yourself. It also includes separate automatic update options for the menu and the loader in **Settings**.
+
+For manual installation:
 
 1. Close Gorilla Tag.
 2. Download **Interstellar Menu.dll** from the [latest release](https://github.com/fleecewtf/Interstellar/releases/latest).
@@ -43,7 +49,9 @@ Interstellar runs on the Windows version of Gorilla Tag with **BepInEx 5** insta
 <details>
 <summary><strong>How do I update or uninstall it?</strong></summary>
 
-To update, close Gorilla Tag and replace the existing **Interstellar Menu.dll** in **BepInEx/plugins** with the DLL from the latest release.
+The [Interstellar Loader](https://interstellar.rip/download) lets you manage the installed menu and includes **Auto-update menu** and **Auto-update loader** options in **Settings**.
+
+For a manual update, close Gorilla Tag and replace the existing **Interstellar Menu.dll** in **BepInEx/plugins** with the DLL from the latest release.
 
 To uninstall, close the game and remove **Interstellar Menu.dll** from that folder.
 
@@ -52,7 +60,7 @@ To uninstall, close the game and remove **Interstellar Menu.dll** from that fold
 <details>
 <summary><strong>Why is Interstellar open source?</strong></summary>
 
-You can inspect how the menu works, review changes between versions, and contribute fixes or improvements. The source is here for anyone who wants to learn from it or adapt it under its license.
+I don't like hiding vibecoded code behind obfuscation. Interstellar is open source so you can inspect what the menu does on your system and check the code for yourself. I want people to feel comfortable using it with the source available to review.
 
 </details>
 
@@ -68,7 +76,7 @@ Third-party assets retain their own licenses. Required notices are included in [
 <details>
 <summary><strong>Where can I report a bug?</strong></summary>
 
-Open an [issue](https://github.com/fleecewtf/Interstellar/issues) with the menu version, what happened, and the steps that caused it. A screenshot or a relevant error message helps when available.
+Join the [Interstellar Discord](https://discord.gg/fZJQ5PaBm6) and use the bug-report channels or open a support ticket. Include your menu version, what happened, and the steps that caused it. Screenshots or relevant error messages help when available.
 
 </details>
 
