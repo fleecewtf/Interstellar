@@ -178,7 +178,7 @@ namespace Interstellar.Menu
                     roomStatusInitialized = true;
                     lastInRoom = inRoom;
                     lastRoomName = roomName;
-                    roomStatus.SafeSetText(FollowMenuSettings(!inRoom ? "Not connected to room" : "Connected to room ") + roomName);
+                    roomStatus.SafeSetText(FollowMenuSettings(!inRoom ? "Not connected to room" : "Connected to room ") + CleanPlayerName(roomName, 10));
                 }
 
                 if (debugUI != null && debugUI.activeSelf)

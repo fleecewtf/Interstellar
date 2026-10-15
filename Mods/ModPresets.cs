@@ -4,6 +4,7 @@ using System.Linq;
 using Interstellar.Classes.Menu;
 using Interstellar.Managers;
 using Interstellar.Menu;
+using Interstellar.Utilities;
 using UnityEngine;
 
 namespace Interstellar.Mods
@@ -23,7 +24,8 @@ namespace Interstellar.Mods
         }
 
         private static int slot = 1;
-        private static string FilePath => Path.Combine(PluginInfo.BaseDirectory, "Presets", slot + ".json");
+        private static string RelativePath => "Presets/" + slot + ".json";
+        private static string FilePath => FileUtilities.GetMenuPath(RelativePath);
         private static ButtonInfo[] ModButtons() => Buttons.buttons.SelectMany(category => category)
             .Where(button => button.isTogglable && !button.label && !button.excludeFromSearch && !button.isSetting).ToArray();
 
@@ -53,12 +55,7 @@ namespace Interstellar.Mods
         {
             try
             {
-                string path = FilePath;
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                string temporary = path + ".tmp";
-                File.WriteAllText(temporary, JsonUtility.ToJson(Capture(), true));
-                if (File.Exists(path)) File.Replace(temporary, path, null);
-                else File.Move(temporary, path);
+                FileUtilities.WriteMenuText(RelativePath, JsonUtility.ToJson(Capture(), true));
                 NotificationManager.SendNotification("Preset " + slot + " saved.");
             }
             catch (Exception exception)
@@ -78,12 +75,12 @@ namespace Interstellar.Mods
 
         public static void Load()
         {
-            if (!File.Exists(FilePath)) { NotificationManager.SendNotification("Preset " + slot + " has not been saved yet."); return; }
             Preset previous = null;
             try
             {
-                if (new FileInfo(FilePath).Length > 65536) throw new InvalidDataException("The preset is too large.");
-                Preset preset = JsonUtility.FromJson<Preset>(File.ReadAllText(FilePath));
+                string path = FilePath;
+                if (!File.Exists(path)) { NotificationManager.SendNotification("Preset " + slot + " has not been saved yet."); return; }
+                Preset preset = JsonUtility.FromJson<Preset>(FileUtilities.ReadBoundedText(path, 65536));
                 if (!IsValid(preset)) throw new InvalidDataException("The preset format is not supported.");
                 previous = Capture();
                 Apply(preset);

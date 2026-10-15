@@ -71,11 +71,22 @@ namespace Interstellar.LoaderRuntime
             var defaults = new BridgeStartupOptions();
             try
             {
-                var file = new FileInfo(path);
-                if (!file.Exists || file.Length > 4096) return defaults;
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                if (stream.Length > 4096) return defaults;
+                var bytes = new byte[4097];
+                int count = 0;
+                while (count < bytes.Length)
+                {
+                    int read = stream.Read(bytes, count, bytes.Length - count);
+                    if (read == 0) break;
+                    count += read;
+                }
+                if (count > 4096) return defaults;
+                using var reader = new StreamReader(new MemoryStream(bytes, 0, count, false), new UTF8Encoding(false, true), true);
+                string content = reader.ReadToEnd();
                 bool section = false, haveManaged = false, haveStartup = false;
                 var parsed = new BridgeStartupOptions();
-                foreach (string source in File.ReadAllLines(path))
+                foreach (string source in content.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     string line = source.Trim();
                     if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal) || line.StartsWith(";", StringComparison.Ordinal)) continue;
@@ -105,6 +116,7 @@ namespace Interstellar.LoaderRuntime
             }
             catch (IOException) { return defaults; }
             catch (UnauthorizedAccessException) { return defaults; }
+            catch (DecoderFallbackException) { return defaults; }
         }
     }
 

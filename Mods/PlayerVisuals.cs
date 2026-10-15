@@ -183,7 +183,7 @@ namespace Interstellar.Mods
             if (string.IsNullOrEmpty(value)) return "Player";
             StringBuilder result = new StringBuilder(32);
             bool wasSpace = true;
-            for (int index = 0; index < value.Length && result.Length < 28; index++)
+            for (int index = 0; index < value.Length && index < 256 && result.Length < 28; index++)
             {
                 char current = value[index];
                 if (char.IsControl(current) || (current >= '\u202a' && current <= '\u202e')

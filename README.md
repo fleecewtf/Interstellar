@@ -6,7 +6,7 @@
 
 <p align="center">A free, open source menu for Gorilla Tag.</p>
 
-<p align="center"><strong>v1.0.0</strong></p>
+<p align="center"><strong>v1.0.1</strong></p>
 
 <p align="center">
   <a href="https://github.com/fleecewtf/Interstellar/releases/latest"><strong>Download DLL</strong></a>

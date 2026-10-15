@@ -208,7 +208,7 @@ namespace Interstellar.Mods
             Buttons.GetIndex("DebugColor").overlapText = "Color: " + red + green + blue;
 
             string master = NetworkSystem.Instance.InRoom && PhotonNetwork.IsMasterClient ? "<color=red> [Master]</color>" : "";
-            Buttons.GetIndex("DebugName").overlapText = PhotonNetwork.LocalPlayer.NickName + master;
+            Buttons.GetIndex("DebugName").overlapText = CleanPlayerName(PhotonNetwork.LocalPlayer.NickName) + master;
 
             Buttons.GetIndex("DebugFps").overlapText = "<b>" + lastDeltaTime + "</b> FPS <b>" + PhotonNetwork.GetPing() + "</b> Ping";
             Buttons.GetIndex("DebugRoomA").overlapText = "<color=blue>" + NetworkSystem.Instance.regionNames[NetworkSystem.Instance.currentRegionIndex].ToUpper() + "</color> " + PhotonNetwork.PlayerList.Length + " Players";

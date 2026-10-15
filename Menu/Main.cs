@@ -74,7 +74,7 @@ namespace Interstellar.Menu
 
             try
             {
-                string allButtonsPath = $"{PluginInfo.BaseDirectory}/AllButtons.txt";
+                string allButtonsPath = FileUtilities.GetMenuPath("AllButtons.txt");
 
                 string[] newButtonNames = Buttons.buttons
                         .SelectMany(list => list)
@@ -83,7 +83,7 @@ namespace Interstellar.Menu
 
                 if (File.Exists(allButtonsPath))
                 {
-                    string[] oldButtonNames = File.ReadAllText(allButtonsPath).Split("\n");
+                    string[] oldButtonNames = FileUtilities.ReadBoundedText(allButtonsPath, 65536).Split("\n");
 
                     foreach (string name in newButtonNames)
                     {
@@ -94,7 +94,7 @@ namespace Interstellar.Menu
                     }
                 }
 
-                File.WriteAllText(allButtonsPath, string.Join("\n", newButtonNames));
+                FileUtilities.WriteMenuText("AllButtons.txt", string.Join("\n", newButtonNames));
             }
             catch { }
 
@@ -3657,12 +3657,27 @@ namespace Interstellar.Menu
 
         public static string CleanPlayerName(string input, int length = 12)
         {
+            if (string.IsNullOrEmpty(input) || length <= 0) return string.Empty;
+            if (input.Length > 256) input = input.Substring(0, 256);
             input = NoRichtextTags(input);
-
-            if (input.Length > length)
-                input = input[..(length - 1)];
-
-            return input;
+            int limit = Math.Min(length, 128);
+            var result = new System.Text.StringBuilder(limit);
+            for (int index = 0; index < input.Length; index++)
+            {
+                if (result.Length >= limit) break;
+                char character = input[index];
+                if (char.IsControl(character) || character == '<' || character == '>' ||
+                    (character >= '\u202a' && character <= '\u202e') || (character >= '\u2066' && character <= '\u2069')) continue;
+                if (char.IsHighSurrogate(character))
+                {
+                    if (index + 1 < input.Length && char.IsLowSurrogate(input[index + 1]) && result.Length + 2 <= limit)
+                        result.Append(character).Append(input[++index]);
+                    continue;
+                }
+                if (char.IsLowSurrogate(character)) continue;
+                result.Append(character);
+            }
+            return result.ToString();
         }
 
         public static void CleanVisualsOnLeave(VRRig rig = null)
@@ -3690,7 +3705,7 @@ namespace Interstellar.Menu
             notifiedLocalMaster = false;
 
             if (!disableRoomNotifications)
-                NotificationManager.SendNotification($"<color=grey>[</color><color=blue>JOIN ROOM</color><color=grey>]</color> Room Code: {lastRoom}");
+                NotificationManager.SendNotification($"<color=grey>[</color><color=blue>JOIN ROOM</color><color=grey>]</color> Room Code: {CleanPlayerName(lastRoom, 10)}");
 
             OnMasterClientSwitch(network.MasterClient);
             RPCProtection();
@@ -3713,7 +3728,7 @@ namespace Interstellar.Menu
                 NotificationManager.ClearAllNotifications();
 
             if (!disableRoomNotifications)
-                NotificationManager.SendNotification($"<color=grey>[</color><color=blue>LEAVE ROOM</color><color=grey>]</color> Room Code: {leftRoom}");
+                NotificationManager.SendNotification($"<color=grey>[</color><color=blue>LEAVE ROOM</color><color=grey>]</color> Room Code: {CleanPlayerName(leftRoom, 10)}");
 
             CleanVisualsOnLeave();
             RPCProtection();

@@ -20,8 +20,9 @@ namespace Interstellar
         {
             if (initialized) return;
             initialized = true;
-            FirstLaunch = !Directory.Exists(PluginInfo.BaseDirectory);
-            Directory.CreateDirectory(PluginInfo.BaseDirectory);
+            string storage = Interstellar.Utilities.FileUtilities.GetMenuPath();
+            FirstLaunch = !Directory.Exists(storage);
+            Directory.CreateDirectory(storage);
             PatchHandler.PatchAll(true);
             GorillaTagger.OnPlayerSpawned(LoadMenu);
         }

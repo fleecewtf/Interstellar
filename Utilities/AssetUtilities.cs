@@ -53,7 +53,7 @@ namespace Interstellar.Utilities
                     yield break;
                 }
 
-                string filePath = $"{GetGamePath()}/{PluginInfo.BaseDirectory}/{fileName}";
+                string filePath = GetMenuPath(fileName);
                 string url = new System.Uri(Path.GetFullPath(filePath)).AbsoluteUri;
                 var handler = new DownloadHandlerAudioClip(url, AudioType.UNKNOWN);
 
@@ -79,7 +79,7 @@ namespace Interstellar.Utilities
 
         public static bool ExtractResource(string resourcePath, string fileName)
         {
-            string filePath = $"{PluginInfo.BaseDirectory}/{fileName}";
+            string filePath = GetMenuPath(fileName);
             if (File.Exists(filePath))
                 return true;
 
@@ -91,7 +91,8 @@ namespace Interstellar.Utilities
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-            using FileStream file = File.Create(filePath);
+            GetMenuPath(fileName);
+            using FileStream file = new FileStream(filePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
             stream.CopyTo(file);
             return true;
         }
